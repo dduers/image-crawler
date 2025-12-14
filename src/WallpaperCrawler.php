@@ -50,7 +50,7 @@ class WallpaperCrawler
      */
     public function outputCachedRandom(string $version_ = 'use'): never
     {
-        
+
         $_files = $this->listCached();
         if (count($_files)) {
             $_file = $_files[rand(0, count($_files) - 1)];
@@ -121,10 +121,10 @@ class WallpaperCrawler
      * get local file id list
      * @return array
      */
-    private function listCached(): array
+    public function listCached(): array
     {
         $_result = glob($this->_cache_path . '*', GLOB_ONLYDIR);
-        array_walk($_result, function(&$item_, $key_) {
+        array_walk($_result, function (&$item_, $key_) {
             $item_ = explode('/', $item_);
             $item_ = array_pop($item_);
             $item_ = $item_;
@@ -179,6 +179,18 @@ class WallpaperCrawler
         }
 
         return false;
+    }
+
+    /**
+     * get image meta data
+     */
+    public function getImageMetaData(string $fileid_, string $version_ = 'use'): array
+    {
+        $_meta = getimagesize($this->_cache_path . $fileid_ . '/' . $version_ . '.jpg');
+        $_result['width'] = $_meta[0];
+        $_result['height'] = $_meta[1];
+        $_result['mime'] = $_meta['mime'];
+        return $_result;
     }
 
     /**
