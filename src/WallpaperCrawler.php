@@ -6,6 +6,8 @@ namespace Dduers\ImageCrawler;
 
 use DOMDocument;
 use DOMXPath;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 /**
  * wallpaper crawler
@@ -48,7 +50,7 @@ class WallpaperCrawler
      */
     public function getCountOfLocalImages(): int
     {
-        return count(glob($this->_images_local_path . '*.jpg'));
+        return count(glob($this->_images_local_path . '*', GLOB_ONLYDIR));
     }
 
     /**
@@ -57,11 +59,11 @@ class WallpaperCrawler
      */
     public function outputRandomWallpaperFromLocal(): never
     {
-        $_files = glob($this->_images_local_path . '*.jpg');
+        $_files = glob($this->_images_local_path . '*', GLOB_ONLYDIR);
         $_picture_data = '';
         $_picture_info = ['mime' => 'image/jpeg'];
         if (count($_files)) {
-            $_picture_file = $_files[rand(0, count($_files) - 1)];
+            $_picture_file = $_files[rand(0, count($_files) - 1)] . '/use.jpg';
             $_picture_info = getimagesize($_picture_file);
             $_picture_data = file_get_contents($_picture_file);
         }
@@ -76,8 +78,11 @@ class WallpaperCrawler
      */
     private function addToBlacklist(string $filename_): bool
     {
-        $_filename = $this->getFilenameByUrl($filename_);
-        if (file_put_contents($this->_images_local_path . 'blacklist.txt', $_filename . "\n", FILE_APPEND)) {
+        if ($this->isBlacklisted($filename_)) {
+            return false;
+        }
+        //$_filename = $this->getFilenameByUrl($filename_);
+        if (file_put_contents($this->_images_local_path . 'blacklist.txt', $filename_ . "\n", FILE_APPEND)) {
             return true;
         }
         return false;
@@ -97,31 +102,53 @@ class WallpaperCrawler
 
     /**
      * delete an image from local storage
-     * @param string $filename_
+     * @param string $filename_ without images path
      * @param bool $blacklist_
      */
     public function deleteFromLocal(string $filename_, bool $blacklist_ = true): bool
     {
-        if (file_exists($filename_)) {
-            unlink($filename_);
+        if (file_exists($this->_images_local_path . $filename_)) {
+            $this->removeDirectory($this->_images_local_path . $filename_);
         }
         if ($blacklist_ === true) {
-            $this->addToBlacklist($this->getFilenameByUrl($filename_));
+            $this->addToBlacklist($filename_);
         }
         return true;
+    }
+
+    /**
+     * remove a directory and all pictures inside
+     */
+    private function removeDirectory(string $directory_): bool
+    {
+        $_directory = new RecursiveDirectoryIterator($directory_, RecursiveDirectoryIterator::SKIP_DOTS);
+        $_files = new RecursiveIteratorIterator(
+            $_directory,
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        // remove files
+        foreach ($_files as $file_) {
+            if ($file_->isDir()) {
+                rmdir($file_->getPathname());
+            } else {
+                unlink($file_->getPathname());
+            }
+        }
+        // remove directory itself
+        return rmdir($directory_);
     }
 
     /**
      * output an image from the local storage
      * @param string $filename_
      */
-    public function outputWallpaperFromLocal(string $filename_): never
+    public function outputWallpaperFromLocal(string $filename_, string $version_ = 'use'): never
     {
         //$_files = glob($this->_images_local_path . '*.jpg');
         $_picture_data = '';
         $_picture_info = ['mime' => 'image/jpeg'];
-        $_picture_info = getimagesize($filename_);
-        $_picture_data = file_get_contents($filename_);
+        $_picture_info = getimagesize($this->_images_local_path . $filename_ . '/' . $version_ . '.jpg');
+        $_picture_data = file_get_contents($this->_images_local_path . $filename_ . '/' . $version_ . '.jpg');
         header('Content-Type: ' . $_picture_info['mime']);
         echo $_picture_data;
         exit();
@@ -145,18 +172,24 @@ class WallpaperCrawler
         $_picture_info = getimagesize($_picture_url);
         // get image data
         $_picture_data = file_get_contents($_picture_url);
+        $_picture_data_md5 = md5($_picture_data);
         // get filename only
-        $_filename = $this->getFilenameByUrl($_picture_url);
+        //$_filename = $this->getFilenameByUrl($_picture_url);
+        //$_filename = $_picture_data_md5 . '.jpg';
         // if filename is blacklisted, output image from local
-        if ($this->isBlacklisted($_filename)) {
+        if ($this->isBlacklisted($_picture_data_md5)) {
             $this->outputRandomWallpaperFromLocal();
             exit();
         }
         // save image to file
         if ($saveToFile_ === true) {
-            $this->saveImageToFile($_filename, $_picture_data);
-            $this->resizeJpeg($this->_images_local_path . $_filename, 1600, 1200);
-            $_picture_data = file_get_contents($this->_images_local_path . $_filename);
+            mkdir($this->_images_local_path . $_picture_data_md5);
+            $this->saveImageToFile($_picture_data_md5 . '/source.jpg', $_picture_data);
+            $this->saveImageToFile($_picture_data_md5 . '/use.jpg', $_picture_data);
+            $this->saveImageToFile($_picture_data_md5 . '/thumb.jpg', $_picture_data);
+            $this->resizeImage($_picture_data_md5 . '/use.jpg', 1600, 1200);
+            $this->resizeImage($_picture_data_md5 . '/thumb.jpg', 320, 240);
+            $_picture_data = file_get_contents($this->_images_local_path . $_picture_data_md5 . '/use.jpg');
         }
         // output image
         header('Content-Type: ' . $_picture_info['mime']);
@@ -176,6 +209,11 @@ class WallpaperCrawler
             mkdir($this->_images_local_path);
         file_put_contents($this->_images_local_path . $filename_, $data_);
         return true;
+    }
+
+    private function resizeImage(string $filename_, int $width_, int $height_): bool
+    {
+        return $this->resizeJpeg($this->_images_local_path . $filename_, $width_, $height_);
     }
 
     /**
