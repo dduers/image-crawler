@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Dduers\ImageCrawler;
 
 use DOMDocument;
@@ -69,6 +71,63 @@ class WallpaperCrawler
     }
 
     /**
+     * add a file name to the blacklist
+     * @param string $filename_
+     */
+    private function addToBlacklist(string $filename_): bool
+    {
+        $_filename = $this->getFilenameByUrl($filename_);
+        if (file_put_contents($this->_images_local_path . 'blacklist.txt', $_filename . "\n", FILE_APPEND)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * check if a filename is blacklisted
+     * @param string $filename_
+     */
+    private function isBlacklisted(string $filename_): bool
+    {
+        if (exec('grep ' . escapeshellarg($this->getFilenameByUrl($filename_)) . ' ' . $this->_images_local_path . 'blacklist.txt')) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * delete an image from local storage
+     * @param string $filename_
+     * @param bool $blacklist_
+     */
+    public function deleteFromLocal(string $filename_, bool $blacklist_ = true): bool
+    {
+        if (file_exists($filename_)) {
+            unlink($filename_);
+        }
+        if ($blacklist_ === true) {
+            $this->addToBlacklist($this->getFilenameByUrl($filename_));
+        }
+        return true;
+    }
+
+    /**
+     * output an image from the local storage
+     * @param string $filename_
+     */
+    public function outputWallpaperFromLocal(string $filename_): never
+    {
+        //$_files = glob($this->_images_local_path . '*.jpg');
+        $_picture_data = '';
+        $_picture_info = ['mime' => 'image/jpeg'];
+        $_picture_info = getimagesize($filename_);
+        $_picture_data = file_get_contents($filename_);
+        header('Content-Type: ' . $_picture_info['mime']);
+        echo $_picture_data;
+        exit();
+    }
+
+    /**
      * output a random wallpaper
      * @param array $terms_
      * @return never
@@ -86,9 +145,15 @@ class WallpaperCrawler
         $_picture_info = getimagesize($_picture_url);
         // get image data
         $_picture_data = file_get_contents($_picture_url);
+        // get filename only
+        $_filename = $this->getFilenameByUrl($_picture_url);
+        // if filename is blacklisted, output image from local
+        if ($this->isBlacklisted($_filename)) {
+            $this->outputRandomWallpaperFromLocal();
+            exit();
+        }
         // save image to file
         if ($saveToFile_ === true) {
-            $_filename = $this->getFilenameByUrl($_picture_url);
             $this->saveImageToFile($_filename, $_picture_data);
             $this->resizeJpeg($this->_images_local_path . $_filename, 1600, 1200);
             $_picture_data = file_get_contents($this->_images_local_path . $_filename);
