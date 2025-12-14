@@ -172,7 +172,7 @@ class WallpaperCrawler
         file_put_contents($this->_cache_path . $filename_ . '/use.jpg', $data_);
         file_put_contents($this->_cache_path . $filename_ . '/thumb.jpg', $data_);
 
-        if ($this->resizeJpeg($filename_ . '/use.jpg', 1600, 1200) && $this->resizeJpeg($filename_ . '/thumb.jpg', 320, 240)) {
+        if ($this->resizeImage($filename_ . '/use.jpg', 1600, 1200) && $this->resizeImage($filename_ . '/thumb.jpg', 320, 240)) {
             return true;
         }
 
@@ -313,11 +313,16 @@ class WallpaperCrawler
      * @param bool $crop_
      * @return bool
      */
-    private function resizeJpeg(string $filename_, int $targetWidth_, int $targetHeight_, bool $crop_ = false): bool
+    private function resizeImage(string $filename_, int $targetWidth_, int $targetHeight_, bool $crop_ = false): bool
     {
         $_filename = $this->_cache_path . $filename_;
 
-        list($_width, $_height) = getimagesize($_filename);
+        $_meta = getimagesize($_filename);
+
+        $_width = $_meta[0];
+        $_height = $_meta[1];
+        $_mime = $_meta['mime'];
+
         $_r = $_width / $_height;
 
         if ($crop_ === true) {
@@ -338,7 +343,16 @@ class WallpaperCrawler
             }
         }
 
-        $_src = imagecreatefromjpeg($_filename);
+        switch ($_mime) {
+            case 'image/jpeg':
+                $_src = imagecreatefromjpeg($_filename);
+                break;
+
+            case 'image/png':
+                $_src = imagecreatefrompng($_filename);
+                break;
+        }
+
         $_dst = imagecreatetruecolor((int)$_newWidth, (int)$_newHeight);
         imagecopyresampled($_dst, $_src, 0, 0, 0, 0, (int)$_newWidth, (int)$_newHeight, $_width, $_height);
         return imagejpeg($_dst, $_filename);
