@@ -6,6 +6,8 @@ namespace Dduers\ImageCrawler\Provider;
 
 final class _4KWallpapers
 {
+    use ProviderTrait;
+    
     private const _PROVIDER_ = [
         'base' => 'https://4kwallpapers.com',
         'query' => 'https://4kwallpapers.com/search/?q=',
@@ -15,28 +17,5 @@ final class _4KWallpapers
         ],
     ];
 
-    public static function instance($class_): self
-    {
-        return new self;
-    }
 
-    public static function base(): string
-    {
-        return self::_PROVIDER_['base'];
-    }
-
-    public static function query(): string
-    {
-        return self::_PROVIDER_['query'];
-    }
-
-    public static function xpath_results(): string
-    {
-        return self::_PROVIDER_['xpath']['results'];
-    }
-
-    public static function xpath_images(): string
-    {
-        return self::_PROVIDER_['xpath']['images'];
-    }
 }
