@@ -4,7 +4,6 @@ namespace Dduers\ImageCrawler;
 
 use DOMDocument;
 use DOMXPath;
-use Web;
 
 /**
  * wallpaper crawler
@@ -203,7 +202,7 @@ class WallpaperCrawler
         curl_setopt($_curl, CURLOPT_RETURNTRANSFER, 1);
         //curl_setopt($_curl, CURLOPT_AUTOREFERER, true);
         $_result = curl_exec($_curl);
-        curl_close($_curl);
+        unset($_curl);
         return $_result;
     }
 
