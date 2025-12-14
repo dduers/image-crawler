@@ -50,6 +50,7 @@ class WallpaperCrawler
      */
     public function outputCachedRandom(string $version_ = 'use'): never
     {
+        
         $_files = $this->listCached();
         if (count($_files)) {
             $_file = $_files[rand(0, count($_files) - 1)];
@@ -122,11 +123,12 @@ class WallpaperCrawler
      */
     private function listCached(): array
     {
-        $_result = [];
-        foreach (glob($this->_cache_path . '*', GLOB_ONLYDIR) as $file_); {
-            $_file = explode('/', $file_);
-            $_result[] = array_pop($_file);
-        }
+        $_result = glob($this->_cache_path . '*', GLOB_ONLYDIR);
+        array_walk($_result, function(&$item_, $key_) {
+            $item_ = explode('/', $item_);
+            $item_ = array_pop($item_);
+            $item_ = $item_;
+        });
         return $_result;
     }
 
