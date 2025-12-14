@@ -121,14 +121,19 @@ class WallpaperCrawler
      * get local file id list
      * @return array
      */
-    public function listCached(): array
+    public function listCached(?int $count_ = null, ?int $offset_ = null): array
     {
         $_result = glob($this->_cache_path . '*', GLOB_ONLYDIR);
         array_walk($_result, function (&$item_, $key_) {
             $item_ = explode('/', $item_);
             $item_ = array_pop($item_);
-            $item_ = $item_;
         });
+        if ($offset_ !== null) {
+            for (; $offset_--; array_shift($_result));
+        }
+        if ($count_ !== null) {
+            $_result = array_slice($_result, 0, $count_);
+        }
         return $_result;
     }
 
