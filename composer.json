@@ -1,0 +1,19 @@
+{
+    "name": "dduers/image-crawler",
+    "description": "An HTTP image crawler",
+    "version": "1.0.0",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Dduers\\ImageCrawler\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Daniel Duersteler",
+            "email": "daniel.duersteler@gmail.com",
+            "role": "Developer"
+        }
+    ]
+}
