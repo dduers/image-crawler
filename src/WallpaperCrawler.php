@@ -15,20 +15,9 @@ use RecursiveIteratorIterator;
  */
 class WallpaperCrawler
 {
-    private const URL_PROVIDERS = [
-        '4kwallpapers.com' => [
-            'base' => 'https://4kwallpapers.com',
-            'query' => 'https://4kwallpapers.com/search/?q=',
-            'xpaths' => [
-                'results' => '//a[@class="wallpapers__canvas_image"]',
-                'images' => '//a[@class="current"]',
-            ],
-        ],
-    ];
-
     private DOMDocument $_dom;
     private DOMXPath $_xpath;
-    private string $_provider;
+    private object $_provider;
     private string $_cache_path;
     private array $_resultUrls = [];
     private array $_imageUrls = [];
@@ -37,7 +26,7 @@ class WallpaperCrawler
      * constructor
      * @param string $_provider
      */
-    function __construct(string $provider_ = '4kwallpapers.com', string $imagesLocalPath_ = 'images/')
+    function __construct(object $provider_, string $imagesLocalPath_ = 'images/')
     {
         $this->_dom = new DOMDocument();
         $this->_provider = $provider_;
@@ -220,7 +209,7 @@ class WallpaperCrawler
      */
     private function queryResultUrls(string $term_, int $count_ = 3): bool
     {
-        $_url = self::URL_PROVIDERS[$this->_provider]['query'] . rawurlencode($term_);
+        $_url = $this->_provider->queryUrl() . rawurlencode($term_);
 
         $_response = $this->getHtmlContentByUrl($_url);
         if ($_response === false) {
@@ -229,7 +218,7 @@ class WallpaperCrawler
 
         $this->loadDOM($_response);
 
-        $_elements = $this->_xpath->query(self::URL_PROVIDERS[$this->_provider]['xpaths']['results']);
+        $_elements = $this->_xpath->query($this->_provider->xpathResults());
         if ($_elements === false) {
             return false;
         }
@@ -259,14 +248,14 @@ class WallpaperCrawler
 
         $this->loadDOM($_response);
 
-        $_elements = $this->_xpath->query(self::URL_PROVIDERS[$this->_provider]['xpaths']['images']);
+        $_elements = $this->_xpath->query($this->_provider->xpathImages());
         if ($_elements === false) {
             return false;
         }
 
         for ($_i = 0; $_i <= $_elements->length; $_i++) {
             if ($_src = $_elements->item($_i)?->getAttribute('href')) {
-                $this->_imageUrls[] = self::URL_PROVIDERS[$this->_provider]['base'] . $_src;
+                $this->_imageUrls[] = $this->_provider->baseUrl() . $_src;
             }
         }
         return true;
