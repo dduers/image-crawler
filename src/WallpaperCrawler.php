@@ -30,8 +30,8 @@ class WallpaperCrawler
     private DOMXPath $_xpath;
     private string $_provider;
     private string $_cache_path;
-    private array $_resultUrls;
-    private array $_imageUrls;
+    private array $_resultUrls = [];
+    private array $_imageUrls = [];
 
     /**
      * constructor
@@ -98,8 +98,13 @@ class WallpaperCrawler
         // get result urls
         $this->queryResultUrls($searchterm_, $resultcount_);
 
+        $_random_url = $this->getRandomResultUrl();
+        if (!$_random_url) {
+            return false;
+        }
+
         // get a random image from the results
-        $this->queryImageUrls($this->getRandomResultUrl());
+        $this->queryImageUrls($_random_url);
 
         $_url = $this->_imageUrls[0];
         $_data = file_get_contents($_url);
