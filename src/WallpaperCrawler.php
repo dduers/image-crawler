@@ -52,7 +52,7 @@ class WallpaperCrawler
     {
         $_files = $this->listCached();
         if (count($_files)) {
-            $_file = $_files[rand(0, count($_files) - 1)] . '/' . $version_ . '.jpg';
+            $_file = $_files[rand(0, count($_files) - 1)];
             $this->outputCached($_file, $version_);
         }
         exit();
