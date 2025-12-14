@@ -21,11 +21,11 @@ class WallpaperCrawler
             ],
         ],
     ];
-    private const IMAGE_FILEPATH = 'images/';
 
     private DOMDocument $_dom;
     private DOMXPath $_xpath;
     private string $_provider;
+    private string $_images_local_path;
     private array $_resultUrls;
     private array $_imageUrls;
 
@@ -33,10 +33,11 @@ class WallpaperCrawler
      * constructor
      * @param string $_provider
      */
-    function __construct(string $provider_ = '4kwallpapers.com')
+    function __construct(string $provider_ = '4kwallpapers.com', string $imagesLocalPath_ = 'images/')
     {
         $this->_dom = new DOMDocument();
         $this->_provider = $provider_;
+        $this->_images_local_path = $imagesLocalPath_;
     }
 
     /**
@@ -45,7 +46,7 @@ class WallpaperCrawler
      */
     public function getCountOfLocalImages(): int
     {
-        return count(glob(self::IMAGE_FILEPATH . '*.jpg'));
+        return count(glob($this->_images_local_path . '*.jpg'));
     }
 
     /**
@@ -54,7 +55,7 @@ class WallpaperCrawler
      */
     public function outputRandomWallpaperFromLocal(): never
     {
-        $_files = glob(self::IMAGE_FILEPATH . '*.jpg');
+        $_files = glob($this->_images_local_path . '*.jpg');
         $_picture_data = '';
         $_picture_info = ['mime' => 'image/jpeg'];
         if (count($_files)) {
@@ -89,8 +90,8 @@ class WallpaperCrawler
         if ($saveToFile_ === true) {
             $_filename = $this->getFilenameByUrl($_picture_url);
             $this->saveImageToFile($_filename, $_picture_data);
-            $this->resizeJpeg(self::IMAGE_FILEPATH . $_filename, 1600, 1200);
-            $_picture_data = file_get_contents(self::IMAGE_FILEPATH . $_filename);
+            $this->resizeJpeg($this->_images_local_path . $_filename, 1600, 1200);
+            $_picture_data = file_get_contents($this->_images_local_path . $_filename);
         }
         // output image
         header('Content-Type: ' . $_picture_info['mime']);
@@ -106,9 +107,9 @@ class WallpaperCrawler
      */
     private function saveImageToFile(string $filename_, string $data_): bool
     {
-        if (!file_exists(self::IMAGE_FILEPATH))
-            mkdir(self::IMAGE_FILEPATH);
-        file_put_contents(self::IMAGE_FILEPATH . $filename_, $data_);
+        if (!file_exists($this->_images_local_path))
+            mkdir($this->_images_local_path);
+        file_put_contents($this->_images_local_path . $filename_, $data_);
         return true;
     }
 

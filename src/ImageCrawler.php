@@ -41,7 +41,7 @@ class ImageCrawler
         $_response = $this->getHtmlContentByUrl($_url);
         $_dom = new DOMDocument();
         libxml_use_internal_errors(TRUE);
-        $_dom->loadHTML($_response['body']);
+        $_dom->loadHTML($_response);
         libxml_clear_errors();
         $_xpath = new DOMXPath($_dom);
         // for google
