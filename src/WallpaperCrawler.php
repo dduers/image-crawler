@@ -187,8 +187,8 @@ class WallpaperCrawler
             $this->saveImageToFile($_picture_data_md5 . '/source.jpg', $_picture_data);
             $this->saveImageToFile($_picture_data_md5 . '/use.jpg', $_picture_data);
             $this->saveImageToFile($_picture_data_md5 . '/thumb.jpg', $_picture_data);
-            $this->resizeImage($_picture_data_md5 . '/use.jpg', 1600, 1200);
-            $this->resizeImage($_picture_data_md5 . '/thumb.jpg', 320, 240);
+            $this->resizeJpeg($_picture_data_md5 . '/use.jpg', 1600, 1200);
+            $this->resizeJpeg($_picture_data_md5 . '/thumb.jpg', 320, 240);
             $_picture_data = file_get_contents($this->_images_local_path . $_picture_data_md5 . '/use.jpg');
         }
         // output image
@@ -209,11 +209,6 @@ class WallpaperCrawler
             mkdir($this->_images_local_path);
         file_put_contents($this->_images_local_path . $filename_, $data_);
         return true;
-    }
-
-    private function resizeImage(string $filename_, int $width_, int $height_): bool
-    {
-        return $this->resizeJpeg($this->_images_local_path . $filename_, $width_, $height_);
     }
 
     /**
@@ -331,7 +326,9 @@ class WallpaperCrawler
      */
     private function resizeJpeg(string $filename_, int $targetWidth_, int $targetHeight_, bool $crop_ = false): bool
     {
-        list($_width, $_height) = getimagesize($filename_);
+        $_filename = $this->_images_local_path . $filename_;
+
+        list($_width, $_height) = getimagesize($_filename);
         $r = $_width / $_height;
         if ($crop_ === true) {
             if ($_width > $_height)
@@ -349,10 +346,10 @@ class WallpaperCrawler
             }
         }
 
-        $_src = imagecreatefromjpeg($filename_);
+        $_src = imagecreatefromjpeg($_filename);
         $_dst = imagecreatetruecolor((int)$_newWidth, (int)$_newHeight);
         imagecopyresampled($_dst, $_src, 0, 0, 0, 0, (int)$_newWidth, (int)$_newHeight, $_width, $_height);
-        return imagejpeg($_dst, $filename_);
+        return imagejpeg($_dst, $_filename);
         //return $_dst;
     }
 }
