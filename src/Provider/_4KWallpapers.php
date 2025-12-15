@@ -7,7 +7,7 @@ namespace Dduers\ImageCrawler\Provider;
 final class _4KWallpapers
 {
     use ProviderTrait;
-    
+
     private const _PROVIDER_ = [
         'base' => 'https://4kwallpapers.com',
         'query' => 'https://4kwallpapers.com/search/?q=',
@@ -16,6 +16,4 @@ final class _4KWallpapers
             'images' => '//a[@class="current"]',
         ],
     ];
-
-
 }
