@@ -12,8 +12,8 @@ final class _DeviantArt
         'base' => 'https://www.deviantart.com',
         'query' => 'https://www.deviantart.com/search?q=',
         'xpath' => [
-            'results' => '//div[@typeof="ImageObject"]/img',
-            'images' => '//div[@typeof="ImageObject"]/img',
+            'results' => '//div[@class="Hw5CoU"]/a',
+            'images' => '//div[@class="_AsfEB"]/img',
         ],
     ];
 }

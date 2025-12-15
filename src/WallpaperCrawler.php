@@ -236,7 +236,7 @@ class WallpaperCrawler
     /**
      * get urls from a image result
      * @param string $queryUrl
-     * @return void
+     * @return bool
      */
     private function queryImageUrls(string $queryUrl_): bool
     {
