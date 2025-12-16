@@ -16,7 +16,7 @@ use RecursiveIteratorIterator;
 class WebCrawler
 {
     private Provider $_provider;
-    private string $_cache_path;
+    private string $_storage;
 
     /**
      * constructor
@@ -25,7 +25,7 @@ class WebCrawler
     function __construct(string $provider_, string $cachePath_ = 'images/')
     {
         $this->_provider = new $provider_();
-        $this->_cache_path = $cachePath_;
+        $this->_storage = $cachePath_;
     }
 
     /**
@@ -49,7 +49,7 @@ class WebCrawler
      */
     public function outputCached(string $fileid_, string $version_ = 'use'): never
     {
-        $_filename = $this->_cache_path . $fileid_ . '/' . $version_ . '.jpg';
+        $_filename = $this->_storage . $fileid_ . '/' . $version_ . '.jpg';
         $_data = file_get_contents($_filename);
         header('Content-Type: ' . mime_content_type($_filename));
         echo $_data;
@@ -64,7 +64,7 @@ class WebCrawler
      */
     public function outputCrawlerCached(string $fileid_): never
     {
-        $_filename = $this->_cache_path . '../_crawler/' . $fileid_ . '.jpg';
+        $_filename = $this->_storage . '../_crawler/' . $fileid_ . '.jpg';
         if (!file_exists($_filename))
             new CrawlerException('outputCrawlerCached: file not exists: ' . $_filename);
         header('Content-Type: ' . mime_content_type($_filename));
@@ -81,8 +81,8 @@ class WebCrawler
      */
     public function deleteCached(string $fileid_, bool $blacklist_ = true): bool
     {
-        if (file_exists($this->_cache_path . $fileid_))
-            $this->removeDirectory($this->_cache_path . $fileid_);
+        if (file_exists($this->_storage . $fileid_))
+            $this->removeDirectory($this->_storage . $fileid_);
         if ($blacklist_ === true)
             $this->addToBlacklist($fileid_);
         return true;
@@ -155,7 +155,7 @@ class WebCrawler
      */
     public function listCached(?int $count_ = null, ?int $offset_ = null): array
     {
-        $_result = glob($this->_cache_path . '*', GLOB_ONLYDIR);
+        $_result = glob($this->_storage . '*', GLOB_ONLYDIR);
         // remove path name, only keep directory name
         array_walk($_result, function (&$item_, $key_) {
             $item_ = explode('/', $item_);
@@ -202,18 +202,18 @@ class WebCrawler
         if ($this->isBlacklisted($fileid_))
             throw new CrawlerException('Blacklisted: ' . $fileid_);
 
-        if (file_exists($this->_cache_path . $fileid_))
+        if (file_exists($this->_storage . $fileid_))
             throw new CrawlerException('Exists: ' . $fileid_);
 
-        if (!file_exists($this->_cache_path . $fileid_))
-            if (!mkdir($this->_cache_path . $fileid_, 0777, true))
+        if (!file_exists($this->_storage . $fileid_))
+            if (!mkdir($this->_storage . $fileid_, 0777, true))
                 throw new CrawlerException('Fatal: Cache Directory');
 
-        file_put_contents($this->_cache_path . $fileid_ . '/source.jpg', $data_);
-        file_put_contents($this->_cache_path . $fileid_ . '/use.jpg', $data_);
-        file_put_contents($this->_cache_path . $fileid_ . '/thumb.jpg', $data_);
+        file_put_contents($this->_storage . $fileid_ . '/source.jpg', $data_);
+        file_put_contents($this->_storage . $fileid_ . '/use.jpg', $data_);
+        file_put_contents($this->_storage . $fileid_ . '/thumb.jpg', $data_);
 
-        if ($this->resizeImage($this->_cache_path . $fileid_ . '/use.jpg', 1600, 1200) && $this->resizeImage($this->_cache_path . $fileid_ . '/thumb.jpg', 320, 240))
+        if ($this->resizeImage($this->_storage . $fileid_ . '/use.jpg', 1600, 1200) && $this->resizeImage($this->_storage . $fileid_ . '/thumb.jpg', 320, 240))
             return true;
         return false;
     }
@@ -226,7 +226,7 @@ class WebCrawler
      */
     public function getImageMetaData(string $fileid_, string $version_ = 'use'): array
     {
-        $_meta = getimagesize($this->_cache_path . $fileid_ . '/' . $version_ . '.jpg');
+        $_meta = getimagesize($this->_storage . $fileid_ . '/' . $version_ . '.jpg');
         $_result['width'] = $_meta[0];
         $_result['height'] = $_meta[1];
         $_result['mime'] = $_meta['mime'];
@@ -240,7 +240,7 @@ class WebCrawler
      */
     public function addToBlacklist(string $fileid_): bool
     {
-        if (!$this->isBlacklisted($fileid_) && file_put_contents($this->_cache_path . 'blacklist.txt', $fileid_ . "\n", FILE_APPEND))
+        if (!$this->isBlacklisted($fileid_) && file_put_contents($this->_storage . 'blacklist.txt', $fileid_ . "\n", FILE_APPEND))
             return true;
         return false;
     }
@@ -252,7 +252,7 @@ class WebCrawler
      */
     public function isBlacklisted(string $fileid_): bool
     {
-        if (exec('grep ' . escapeshellarg($fileid_) . ' ' . $this->_cache_path . 'blacklist.txt'))
+        if (exec('grep ' . escapeshellarg($fileid_) . ' ' . $this->_storage . 'blacklist.txt'))
             return true;
         return false;
     }
@@ -302,5 +302,55 @@ class WebCrawler
         $_dst = imagecreatetruecolor((int)$_width_new, (int)$_height_new);
         imagecopyresampled($_dst, $_src, 0, 0, 0, 0, (int)$_width_new, (int)$_height_new, $_width, $_height);
         return imagejpeg($_dst, $filename_);
+    }
+
+    /**
+     * resize image
+     * @param string $url_
+     * @param int $width_
+     * @param int $height_
+     * @param bool $crop_
+     * @return bool
+     */
+    public function resizeImageUrl(string $url_, int $width_, int $height_, bool $crop_ = false): bool
+    {
+        $_path_crawler_cache = $this->_storage . '../_crawler/';
+        if (!file_exists($_path_crawler_cache))
+            if (!mkdir($_path_crawler_cache, 0777, true))
+                return false;
+
+        $_fileid = md5($url_);
+        $_filename =  $_path_crawler_cache . $_fileid . '.jpg';
+        if (file_exists($_filename))
+            return false;
+
+        $_meta = getimagesize($url_);
+        $_width = $_meta[0];
+        $_height = $_meta[1];
+        $_r = $_width / $_height;
+        $_data = file_get_contents($url_);
+        $_image_source = imagecreatefromstring($_data);
+
+        if ($crop_ === true) {
+            if ($_width > $_height)
+                $_width = ceil($_width - ($_width * abs($_r - $width_ / $height_)));
+            else $_height = ceil($_height - ($_height * abs($_r - $width_ / $height_)));
+            $_width_new = $width_;
+            $_height_new = $height_;
+        } else {
+            if ($width_ / $height_ > $_r) {
+                $_width_new = $height_ * $_r;
+                $_height_new = $height_;
+            } else {
+                $_height_new = $width_ / $_r;
+                $_width_new = $width_;
+            }
+        }
+
+        $_image_destination = imagecreatetruecolor((int)$_width_new, (int)$_height_new);
+        imagecopyresampled($_image_destination, $_image_source, 0, 0, 0, 0, (int)$_width_new, (int)$_height_new, $_width, $_height);
+        imagejpeg($_image_destination, $_filename);
+
+        return true;
     }
 }
