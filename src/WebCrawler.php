@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dduers\ImageCrawler;
 
+use Dduers\ImageCrawler\Exception\CrawlerException;
 use Dduers\ImageCrawler\Provider\Provider;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -52,6 +53,23 @@ class WebCrawler
         $_data = file_get_contents($_filename);
         header('Content-Type: ' . mime_content_type($_filename));
         echo $_data;
+        exit();
+    }
+
+    /**
+     * output specific from local cache
+     * @param string $fileid_
+     * @param string $version_
+     * @return never
+     */
+    public function outputCrawlerCached(string $fileid_): never
+    {
+        $_filename = $this->_cache_path . '../_crawler/' . $fileid_ . '.jpg';
+        if (!file_exists($_filename))
+            new CrawlerException('outputCrawlerCached: file not exists: ' . $_filename);
+        header('Content-Type: ' . mime_content_type($_filename));
+        header('Content-Length: ' . filesize($_filename));
+        echo file_get_contents($_filename);
         exit();
     }
 
