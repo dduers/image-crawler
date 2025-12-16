@@ -129,7 +129,9 @@ class WebCrawler
     {
         return $this->_provider->query(
             $this->_provider->url('search') . rawurlencode($searchterm_),
-            $this->_provider->expression('results')
+            $this->_provider->expression('results'),
+            '',//$this->_provider->url('base'),
+            $this->_provider->attribute('results')
         );
     }
 
@@ -143,7 +145,8 @@ class WebCrawler
         return $this->_provider->query(
             $ressourceUrl_,
             $this->_provider->expression('images'),
-            $this->_provider->url('base')
+            $this->_provider->url('base'),
+            $this->_provider->attribute('images')
         );
     }
 

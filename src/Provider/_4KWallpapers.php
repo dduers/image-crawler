@@ -12,10 +12,12 @@ final class _4KWallpapers extends Provider
             'search' => 'https://4kwallpapers.com/search/?q=',
         ],
         'expression' => [
-            //'results' => '//a[@class="wallpapers__canvas_image"]',
             'results' => '//p[@class="wallpapers__item"]/a[@class="wallpapers__canvas_image"]',
-            //'images' => '//a[@class="current"]',
             'images' => '//span[@class="res-ttl"]/a[@class="current"]',
         ],
+        'attribute' => [
+            'results' => 'href',
+            'images' => 'href',
+        ]
     ];
 }

@@ -19,6 +19,11 @@ class Provider
         return static::{'REGISTRY'}[__FUNCTION__][$identifier_];
     }
 
+    public static function attribute(string $identifier_): string
+    {
+        return static::{'REGISTRY'}[__FUNCTION__][$identifier_];
+    }
+
     /**
      * xpath query on an content behind an url
      * @param string $url_
