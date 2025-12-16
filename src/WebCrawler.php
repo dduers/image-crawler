@@ -194,12 +194,20 @@ class WebCrawler
      * add file to cache
      * @param string $fileid_
      * @param string $data_
+     * @throws CrawlerException
      * @return bool
      */
     private function addCached(string $fileid_, string $data_): bool
     {
-        if (file_exists($this->_cache_path . $fileid_) || !mkdir($this->_cache_path . $fileid_, 0777, true) || $this->isBlacklisted($fileid_))
-            return false;
+        if ($this->isBlacklisted($fileid_))
+            throw new CrawlerException('Blacklisted: ' . $fileid_);
+
+        if (file_exists($this->_cache_path . $fileid_))
+            throw new CrawlerException('Exists: ' . $fileid_);
+
+        if (!file_exists($this->_cache_path . $fileid_))
+            if (!mkdir($this->_cache_path . $fileid_, 0777, true))
+                throw new CrawlerException('Fatal: Cache Directory');
 
         file_put_contents($this->_cache_path . $fileid_ . '/source.jpg', $data_);
         file_put_contents($this->_cache_path . $fileid_ . '/use.jpg', $data_);
