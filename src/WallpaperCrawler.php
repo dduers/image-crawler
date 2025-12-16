@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Dduers\ImageCrawler;
 
-use DOMDocument;
-use DOMXPath;
+use Dduers\ImageCrawler\Provider\Provider;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
@@ -15,119 +14,139 @@ use RecursiveIteratorIterator;
  */
 class WallpaperCrawler
 {
-    private DOMDocument $_dom;
-    private DOMXPath $_xpath;
-    private object $_provider;
+    private Provider $_provider;
     private string $_cache_path;
-    private array $_resultUrls = [];
-    private array $_imageUrls = [];
 
     /**
      * constructor
      * @param string $_provider
      */
-    function __construct(object $provider_, string $imagesLocalPath_ = 'images/')
+    function __construct(string $provider_, string $cachePath_ = 'images/')
     {
-        $this->_dom = new DOMDocument();
-        $this->_provider = $provider_;
-        $this->_cache_path = $imagesLocalPath_;
+        $this->_provider = new $provider_();
+        $this->_cache_path = $cachePath_;
     }
 
     /**
-     * output picture from local storage
+     * output random from local cache
+     * @param string $version_
      * @return never
      */
     public function outputCachedRandom(string $version_ = 'use'): never
     {
-
-        $_files = $this->listCached();
-        if (count($_files)) {
-            $_file = $_files[rand(0, count($_files) - 1)];
-            $this->outputCached($_file, $version_);
-        }
+        $_fileids = $this->listCached();
+        if (count($_fileids))
+            $this->outputCached($_fileids[array_rand($_fileids)], $version_);
         exit();
     }
 
     /**
-     * output a cached wallpaper
+     * output specific from local cache
+     * @param string $fileid_
+     * @param string $version_
+     * @return never
      */
-    public function outputCached(string $filename_, string $version_ = 'use'): never
+    public function outputCached(string $fileid_, string $version_ = 'use'): never
     {
-        $_file = $this->_cache_path . $filename_ . '/' . $version_ . '.jpg';
-        $_meta = getimagesize($_file);
-        $_data = file_get_contents($_file);
-        header('Content-Type: ' . $_meta['mime']);
+        $_filename = $this->_cache_path . $fileid_ . '/' . $version_ . '.jpg';
+        $_data = file_get_contents($_filename);
+        header('Content-Type: ' . mime_content_type($_filename));
         echo $_data;
         exit();
     }
 
     /**
      * delete an image from local storage
-     * @param string $filename_ without images path
+     * @param string $fileid_ 
      * @param bool $blacklist_
+     * @return bool
      */
-    public function deleteCached(string $filename_, bool $blacklist_ = true): bool
+    public function deleteCached(string $fileid_, bool $blacklist_ = true): bool
     {
-        if (file_exists($this->_cache_path . $filename_)) {
-            $this->removeDirectory($this->_cache_path . $filename_);
-        }
-        if ($blacklist_ === true) {
-            $this->addToBlacklist($filename_);
-        }
+        if (file_exists($this->_cache_path . $fileid_))
+            $this->removeDirectory($this->_cache_path . $fileid_);
+        if ($blacklist_ === true)
+            $this->addToBlacklist($fileid_);
         return true;
     }
 
     /**
-     * output a random wallpaper
-     * @param string $terms_
+     * output file from websource
+     * @param string $fileUrl_
      * @return never
      */
-    public function crawlRemote(string $searchterm_, $resultcount_ = 3): false|string
+    public function output(string $fileUrl_): never
     {
-        // get result urls
-        $this->queryResultUrls($searchterm_, $resultcount_);
+        $_data = file_get_contents($fileUrl_);
+        header('Content-Type: ' . mime_content_type($fileUrl_));
+        echo $_data;
+        exit();
+    }
 
-        $_random_url = $this->getRandomResultUrl();
-        if (!$_random_url) {
-            return false;
+    /**
+     * crawl a file from web to cache
+     * @param string $searchterm_
+     * @return false|string
+     */
+    public function crawl(string $imageUrl_, bool $permanent_ = false): false|string
+    {
+        $_data = file_get_contents($imageUrl_);
+        if ($permanent_ === true) {
+            $_file_id = md5($_data);
+            if (!$this->addCached($_file_id, $_data)) {
+                unset($_data);
+                return false;
+            }
+            return $_file_id;
         }
+        return $_data;
+    }
 
-        // get a random image from the results
-        $this->queryImageUrls($_random_url);
+    /**
+     * get ressource urls
+     * @param string $searchterm_
+     * @return false|array
+     */
+    public function queryRessourceUrls(string $searchterm_): false|array
+    {
+        return $this->_provider->query(
+            $this->_provider->url('search') . rawurlencode($searchterm_),
+            $this->_provider->expression('results')
+        );
+    }
 
-        $_url = $this->_imageUrls[0];
-        $_data = file_get_contents($_url);
-        $_file_id = md5($_data);
-
-        // if blacklisted locally, don't download to cache
-        if ($this->isBlacklisted($_file_id)) {
-            return false;
-        }
-
-        if ($this->saveToCache($_file_id, $_data) === false) {
-            return false;
-        }
-
-        return $_file_id;
+    /**
+     * get file urls
+     * @param string $url_
+     * @return false|array
+     */
+    public function queryFileUrls(string $ressourceUrl_): false|array
+    {
+        return $this->_provider->query(
+            $ressourceUrl_,
+            $this->_provider->expression('images'),
+            $this->_provider->url('base')
+        );
     }
 
     /**
      * get local file id list
+     * @param ?int $count_
+     * @param ?int $offset_
      * @return array
      */
     public function listCached(?int $count_ = null, ?int $offset_ = null): array
     {
         $_result = glob($this->_cache_path . '*', GLOB_ONLYDIR);
+        // remove path name, only keep directory name
         array_walk($_result, function (&$item_, $key_) {
             $item_ = explode('/', $item_);
             $item_ = array_pop($item_);
         });
-        if ($offset_ !== null) {
+        if ($offset_ !== null)
             for (; $offset_--; array_shift($_result));
-        }
-        if ($count_ !== null) {
+        if ($count_ !== null)
             $_result = array_slice($_result, 0, $count_);
-        }
         return $_result;
     }
 
@@ -145,43 +164,39 @@ class WallpaperCrawler
         );
         // remove files
         foreach ($_files as $file_) {
-            if ($file_->isDir()) {
+            if ($file_->isDir())
                 rmdir($file_->getPathname());
-            } else {
-                unlink($file_->getPathname());
-            }
+            else unlink($file_->getPathname());
         }
         // remove directory itself
         return rmdir($directory_);
     }
 
     /**
-     * save image to file
-     * @param string $filename_
+     * add file to cache
+     * @param string $fileid_
      * @param string $data_
      * @return bool
      */
-    private function saveToCache(string $filename_, string $data_): bool
+    private function addCached(string $fileid_, string $data_): bool
     {
-        if (!file_exists($this->_cache_path . $filename_)) {
-            if (!mkdir($this->_cache_path . $filename_, 0777, true)) {
-                return false;
-            }
-        }
+        if (file_exists($this->_cache_path . $fileid_) || !mkdir($this->_cache_path . $fileid_, 0777, true) || $this->isBlacklisted($fileid_))
+            return false;
 
-        file_put_contents($this->_cache_path . $filename_ . '/source.jpg', $data_);
-        file_put_contents($this->_cache_path . $filename_ . '/use.jpg', $data_);
-        file_put_contents($this->_cache_path . $filename_ . '/thumb.jpg', $data_);
+        file_put_contents($this->_cache_path . $fileid_ . '/source.jpg', $data_);
+        file_put_contents($this->_cache_path . $fileid_ . '/use.jpg', $data_);
+        file_put_contents($this->_cache_path . $fileid_ . '/thumb.jpg', $data_);
 
-        if ($this->resizeImage($filename_ . '/use.jpg', 1600, 1200) && $this->resizeImage($filename_ . '/thumb.jpg', 320, 240)) {
+        if ($this->resizeImage($this->_cache_path . $fileid_ . '/use.jpg', 1600, 1200) && $this->resizeImage($this->_cache_path . $fileid_ . '/thumb.jpg', 320, 240))
             return true;
-        }
-
         return false;
     }
 
     /**
      * get image meta data
+     * @param string $fileid_
+     * @param string $version_
+     * @return array
      */
     public function getImageMetaData(string $fileid_, string $version_ = 'use'): array
     {
@@ -193,129 +208,27 @@ class WallpaperCrawler
     }
 
     /**
-     * get a random result url
-     * @return string|false
-     */
-    private function getRandomResultUrl(): string|false
-    {
-        return $this->_resultUrls[rand(0, count($this->_resultUrls) - 1)] ?? false;
-    }
-
-    /**
-     * get images url
-     * @param string $term_
-     * @param int $count_
-     * @return bool
-     */
-    private function queryResultUrls(string $term_, int $count_ = 3): bool
-    {
-        $_url = $this->_provider->queryUrl() . rawurlencode($term_);
-
-        $_response = $this->getHtmlContentByUrl($_url);
-        if ($_response === false) {
-            return false;
-        }
-
-        $this->loadDOM($_response);
-
-        $_elements = $this->_xpath->query($this->_provider->xpathResults());
-        if ($_elements === false) {
-            return false;
-        }
-
-        $_count = $_elements->length < $count_ ? $_elements->length : $count_;
-        for ($_i = 0; $_i <= $_count; $_i++) {
-            if ($_src = $_elements->item($_i)?->getAttribute('href')) {
-                $this->_resultUrls[] = $_src;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * get urls from a image result
-     * @param string $queryUrl
-     * @return bool
-     */
-    private function queryImageUrls(string $queryUrl_): bool
-    {
-        $_response = $this->getHtmlContentByUrl($queryUrl_);
-
-        if ($_response === false) {
-            return false;
-        }
-
-        $this->loadDOM($_response);
-
-        $_elements = $this->_xpath->query($this->_provider->xpathImages());
-        if ($_elements === false) {
-            return false;
-        }
-
-        for ($_i = 0; $_i <= $_elements->length; $_i++) {
-            if ($_src = $_elements->item($_i)?->getAttribute('href')) {
-                $this->_imageUrls[] = $this->_provider->baseUrl() . $_src;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * load html string to dom document
-     * @param string $html_
-     * @return bool
-     */
-    private function loadDOM(string $html_): bool
-    {
-        libxml_use_internal_errors(true);
-        $this->_dom->loadHTML($html_);
-        libxml_clear_errors();
-        $this->_xpath = new DOMXPath($this->_dom);
-        return true;
-    }
-
-    /**
      * add a file name to the blacklist
-     * @param string $filename_
+     * @param string $fileid_
      * @return bool
      */
-    private function addToBlacklist(string $filename_): bool
+    public function addToBlacklist(string $fileid_): bool
     {
-        if (!$this->isBlacklisted($filename_) && file_put_contents($this->_cache_path . 'blacklist.txt', $filename_ . "\n", FILE_APPEND)) {
+        if (!$this->isBlacklisted($fileid_) && file_put_contents($this->_cache_path . 'blacklist.txt', $fileid_ . "\n", FILE_APPEND))
             return true;
-        }
         return false;
     }
 
     /**
-     * check if a filename is blacklisted
-     * @param string $filename_
+     * check if a file is blacklisted
+     * @param string $fileid_
      * @return bool
      */
-    private function isBlacklisted(string $filename_): bool
+    public function isBlacklisted(string $fileid_): bool
     {
-        if (exec('grep ' . escapeshellarg($filename_) . ' ' . $this->_cache_path . 'blacklist.txt')) {
+        if (exec('grep ' . escapeshellarg($fileid_) . ' ' . $this->_cache_path . 'blacklist.txt'))
             return true;
-        }
         return false;
-    }
-
-    /**
-     * get content from url
-     * @param string $url_
-     * @return string
-     */
-    private function getHtmlContentByUrl(string $url_): string|false
-    {
-        $_curl = curl_init($url_);
-        if ($_curl === false)
-            return false;
-        curl_setopt($_curl, CURLOPT_RETURNTRANSFER, 1);
-        //curl_setopt($_curl, CURLOPT_AUTOREFERER, true);
-        $_result = curl_exec($_curl);
-        unset($_curl);
-        return $_result;
     }
 
     /**
@@ -326,48 +239,42 @@ class WallpaperCrawler
      * @param bool $crop_
      * @return bool
      */
-    private function resizeImage(string $filename_, int $targetWidth_, int $targetHeight_, bool $crop_ = false): bool
+    private function resizeImage(string $filename_, int $width_target_, int $height_target_, bool $crop_ = false): bool
     {
-        $_filename = $this->_cache_path . $filename_;
-
-        $_meta = getimagesize($_filename);
-
+        $_meta = getimagesize($filename_);
         $_width = $_meta[0];
         $_height = $_meta[1];
-        $_mime = $_meta['mime'];
 
         $_r = $_width / $_height;
 
         if ($crop_ === true) {
-            if ($_width > $_height) {
-                $_width = ceil($_width - ($_width * abs($_r - $targetWidth_ / $targetHeight_)));
-            } else {
-                $_height = ceil($_height - ($_height * abs($_r - $targetWidth_ / $targetHeight_)));
-            }
-            $_newWidth = $targetWidth_;
-            $_newHeight = $targetHeight_;
+            if ($_width > $_height)
+                $_width = ceil($_width - ($_width * abs($_r - $width_target_ / $height_target_)));
+            else $_height = ceil($_height - ($_height * abs($_r - $width_target_ / $height_target_)));
+            $_width_new = $width_target_;
+            $_height_new = $height_target_;
         } else {
-            if ($targetWidth_ / $targetHeight_ > $_r) {
-                $_newWidth = $targetHeight_ * $_r;
-                $_newHeight = $targetHeight_;
+            if ($width_target_ / $height_target_ > $_r) {
+                $_width_new = $height_target_ * $_r;
+                $_height_new = $height_target_;
             } else {
-                $_newHeight = $targetWidth_ / $_r;
-                $_newWidth = $targetWidth_;
+                $_height_new = $width_target_ / $_r;
+                $_width_new = $width_target_;
             }
         }
 
-        switch ($_mime) {
+        switch ($_meta['mime']) {
             case 'image/jpeg':
-                $_src = imagecreatefromjpeg($_filename);
+                $_src = imagecreatefromjpeg($filename_);
                 break;
 
             case 'image/png':
-                $_src = imagecreatefrompng($_filename);
+                $_src = imagecreatefrompng($filename_);
                 break;
         }
 
-        $_dst = imagecreatetruecolor((int)$_newWidth, (int)$_newHeight);
-        imagecopyresampled($_dst, $_src, 0, 0, 0, 0, (int)$_newWidth, (int)$_newHeight, $_width, $_height);
-        return imagejpeg($_dst, $_filename);
+        $_dst = imagecreatetruecolor((int)$_width_new, (int)$_height_new);
+        imagecopyresampled($_dst, $_src, 0, 0, 0, 0, (int)$_width_new, (int)$_height_new, $_width, $_height);
+        return imagejpeg($_dst, $filename_);
     }
 }
