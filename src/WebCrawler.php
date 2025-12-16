@@ -12,7 +12,7 @@ use RecursiveIteratorIterator;
  * wallpaper crawler
  * @author Daniel Duersteler <daniel.duersteler@xsite.ch
  */
-class WallpaperCrawler
+class WebCrawler
 {
     private Provider $_provider;
     private string $_cache_path;
