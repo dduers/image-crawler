@@ -10,6 +10,7 @@ use DOMXPath;
 final class _DeviantArt extends Provider
 {
     protected const REGISTRY = [
+        'display' => 'Deviant-Art',
         'url' => [
             'base' => 'https://www.deviantart.com',
             'results' => 'https://www.deviantart.com/search?q=',

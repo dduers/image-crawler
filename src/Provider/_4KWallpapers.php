@@ -10,6 +10,7 @@ use DOMXPath;
 final class _4KWallpapers extends Provider
 {
     protected const REGISTRY = [
+        'display' => '4K-Wallpapers',
         'url' => [
             'base' => 'https://4kwallpapers.com',
             'results' => 'https://4kwallpapers.com/search/?q=',

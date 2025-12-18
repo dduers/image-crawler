@@ -11,6 +11,7 @@ use DOMXPath;
 final class _Wallpapers extends Provider
 {
     protected const REGISTRY = [
+        'display' => 'Wallpapers',
         'url' => [
             'base' => 'https://wallpapers.com',
             'results' => 'https://wallpapers.com/search/',
