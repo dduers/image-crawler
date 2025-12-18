@@ -34,7 +34,7 @@ final class _DeviantArt extends Provider
      * @param string $prefix_
      * @return array
      */
-    protected function results(string $url_, string $prefix_ = ''): array
+    protected function results(string $url_): array
     {
         $_result = [];
         $_xpath = $this->parse($url_);
@@ -42,7 +42,7 @@ final class _DeviantArt extends Provider
             $_node_child = $_xpath->query('div["vYfnpn"]/img', $node_);
             $_node_child_attr = $_node_child->item(0)?->{'getAttribute'}('src');
             if ($_node_child_attr)
-                $_result[$_node_child_attr] = $prefix_ . $node_->{'getAttribute'}('href');
+                $_result[$_node_child_attr] = $node_->{'getAttribute'}('href');
         }
         return $_result;
     }
@@ -53,7 +53,7 @@ final class _DeviantArt extends Provider
      * @param string $prefix_
      * @return array
      */
-    protected function details(string $url_, string $prefix_ = ''): array
+    protected function details(string $url_): array
     {
         $_result = [];
         $_xpath = $this->parse($url_);
@@ -61,7 +61,7 @@ final class _DeviantArt extends Provider
         // TODO:: better xpath
         //foreach ($_xpath->query('//img[@class="lGws3n imYPxe"]') as $node_) {
         foreach ($_xpath->query('/html/body/main/div/div[1]/div[1]/div/div[2]/img') as $node_) {
-            $_result[] = $prefix_ . $node_->{'getAttribute'}('src');
+            $_result[] = $node_->{'getAttribute'}('src');
         }
         return $_result;
     }

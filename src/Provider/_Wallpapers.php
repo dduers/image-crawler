@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Dduers\ImageCrawler\Provider;
 
+use Dom\XMLDocument;
 use DOMDocument;
 use DOMXPath;
 
-final class _4KWallpapers extends Provider
+final class _Wallpapers extends Provider
 {
     protected const REGISTRY = [
         'url' => [
-            'base' => 'https://4kwallpapers.com',
-            'results' => 'https://4kwallpapers.com/search/?q=',
+            'base' => 'https://wallpapers.com',
+            'results' => 'https://wallpapers.com/search/',
         ],
     ];
 
@@ -38,9 +39,12 @@ final class _4KWallpapers extends Provider
     {
         $_result = [];
         $_xpath = $this->parse($url_);
-        foreach ($_xpath->query('//a[@class="wallpapers__canvas_image"]') as $node_) {
-            $_node_child = $_xpath->query('span[@class="wallpapers__canvas ripple"]/img[@itemprop="thumbnail"]', $node_);
-            $_result[$_node_child->item(0)->{'getAttribute'}('src')] = $node_->{'getAttribute'}('href');
+        foreach ($_xpath->query('//figure[@class="detail-data"]/a[picture]') as $node_) {
+            $_href = $node_->{'getAttribute'}('href');
+            //$_node_child = $_xpath->query('picture/img[@class="promote"]', $node_);
+            //$_node_child_attr = $_node_child->item(0)?->{'getAttribute'}('src');
+            $_src = $this->url('base') . '/images/thumbnail/' . str_replace('.html', '.jpg', substr($_href, strrpos($_href, '/') + 1));
+            $_result[$_src] = $_href;
         }
         return $_result;
     }
@@ -55,8 +59,8 @@ final class _4KWallpapers extends Provider
     {
         $_result = [];
         $_xpath = $this->parse($url_);
-        foreach ($_xpath->query('//a[@class="current"]') as $node_) {
-            $_result[] = $this->url('base') . $node_->{'getAttribute'}('href');
+        foreach ($_xpath->query('//img[@class="post-image priority promote"]') as $node_) {
+            $_result[] = $this->url('base') . $node_->{'getAttribute'}('src');
         }
         return $_result;
     }

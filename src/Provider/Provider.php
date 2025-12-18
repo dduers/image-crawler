@@ -17,9 +17,9 @@ class Provider
      * @param string $searchterm_
      * @return false|array
      */
-    public function queryResults(string $searchterm_, string $prefix_): false|array
+    public function queryResults(string $searchterm_): false|array
     {
-        return $this->{'results'}($this->url('results') . rawurlencode($searchterm_), $prefix_);
+        return $this->{'results'}($this->url('results') . rawurlencode($searchterm_));
     }
 
     /**
@@ -27,8 +27,8 @@ class Provider
      * @param string $url_
      * @return false|array
      */
-    public function queryDetails(string $url_, string $prefix_): false|array
+    public function queryDetails(string $url_): false|array
     {
-        return $this->{'details'}($url_, $prefix_);
+        return $this->{'details'}($url_);
     }
 }
