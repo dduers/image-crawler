@@ -50,9 +50,10 @@ class WebCrawler
     public function outputCached(string $fileid_, string $version_ = 'use'): never
     {
         $_filename = $this->_storage . $fileid_ . '/' . $version_ . '.jpg';
-        $_data = file_get_contents($_filename);
+        if (!file_exists($_filename))
+            throw new CrawlerException(__FUNCTION__ . ': file not exist.');
         header('Content-Type: ' . mime_content_type($_filename));
-        echo $_data;
+        echo file_get_contents($_filename);
         exit();
     }
 
@@ -66,7 +67,7 @@ class WebCrawler
     {
         $_filename = $this->_storage . '../_crawler/' . $fileid_ . '.jpg';
         if (!file_exists($_filename))
-            new CrawlerException('outputCrawlerCached: file not exists: ' . $_filename);
+            throw new CrawlerException(__FUNCTION__ . ': file not exist.');
         header('Content-Type: ' . mime_content_type($_filename));
         header('Content-Length: ' . filesize($_filename));
         echo file_get_contents($_filename);
@@ -95,9 +96,8 @@ class WebCrawler
      */
     public function output(string $fileUrl_): never
     {
-        $_data = file_get_contents($fileUrl_);
         header('Content-Type: ' . mime_content_type($fileUrl_));
-        echo $_data;
+        echo file_get_contents($fileUrl_);
         exit();
     }
 
@@ -120,34 +120,9 @@ class WebCrawler
         return $_data;
     }
 
-    /**
-     * get ressource urls
-     * @param string $searchterm_
-     * @return false|array
-     */
-    public function queryRessourceUrls(string $searchterm_): false|array
+    public function provider()
     {
-        return $this->_provider->query(
-            $this->_provider->url('search') . rawurlencode($searchterm_),
-            $this->_provider->expression('results'),
-            '',//$this->_provider->url('base'),
-            $this->_provider->attribute('results')
-        );
-    }
-
-    /**
-     * get file urls
-     * @param string $url_
-     * @return false|array
-     */
-    public function queryFileUrls(string $ressourceUrl_): false|array
-    {
-        return $this->_provider->query(
-            $ressourceUrl_,
-            $this->_provider->expression('images'),
-            $this->_provider->url('base'),
-            $this->_provider->attribute('images')
-        );
+        return $this->_provider;
     }
 
     /**
