@@ -49,4 +49,23 @@ final class _4KWallpapers extends Provider
         }
         return $_result;
     }
+
+    /**
+     * query meta details
+     * @param string $url_
+     * @return array
+     */
+    protected function detailsMeta(string $url_): array
+    {
+        $_result = [];
+        $_xpath = $this->parse($url_);
+        foreach ($_xpath->query('//span[@class="main-id"]//h1') as $node_) {
+            $_result['title'] = trim($node_->{'textContent'});
+        }
+        foreach ($_xpath->query('//span[@class="main-id"]/following-sibling::p') as $node_) {
+            $_result['description'] = trim($node_->{'textContent'});
+        }
+        $_result['source'] = $url_;
+        return $_result;
+    }
 }

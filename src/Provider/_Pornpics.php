@@ -39,18 +39,21 @@ final class _Pornpics extends Provider
     }
 
     /**
-     * query the detail page
+     * query meta details
      * @param string $url_
-     * @param string $prefix_
      * @return array
      */
-    protected function details(string $url_): array
+    protected function detailsMeta(string $url_): array
     {
         $_result = [];
         $_xpath = $this->parse($url_);
-        foreach ($_xpath->query('//li[@class="thumbwook "]/a[@class="rel-link"]\img[data-src]') as $node_) {
-            $_result[] = $node_->{'getAttribute'}('src');
+        foreach ($_xpath->query('//h1') as $node_) {
+            $_result['title'] = trim($node_->{'textContent'});
         }
+        foreach ($_xpath->query('//p') as $node_) {
+            $_result['description'] = trim($node_->{'textContent'});
+        }
+        $_result['source'] = $url_;
         return $_result;
     }
 }

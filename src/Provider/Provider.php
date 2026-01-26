@@ -6,6 +6,7 @@ namespace Dduers\ImageCrawler\Provider;
 
 use DOMDocument;
 use DOMXPath;
+use Exception;
 
 class Provider
 {
@@ -35,6 +36,15 @@ class Provider
         return $this->{'details'}($url_);
     }
 
+    /**
+     * query details meta
+     * @param string $url_
+     * @return false|array
+     */
+    public function queryDetailsMeta(string $url_): false|array
+    {
+        return $this->{'detailsMeta'}($url_);
+    }
 
     /**
      * parse url to DOMXPath
@@ -44,9 +54,13 @@ class Provider
     protected function parse(string $url_): DOMXPath
     {
         $_html = $this->curl($url_);
+        if ($_html === false)
+            throw new Exception('Cannot resolve URL: ' . $url_);
         $_dom = new DOMDocument();
         //$_dom->loadHTMLFile($url_, LIBXML_NOERROR);
-        $_dom->loadHTML($_html, LIBXML_NOERROR);
+        $_html_loaded = $_dom->loadHTML($_html, LIBXML_NOERROR);
+        if ($_html_loaded === false)
+            throw new Exception('Could not parse HTML content: ' . $url_);
         return new DOMXPath($_dom);
     }
 

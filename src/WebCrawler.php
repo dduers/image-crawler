@@ -58,6 +58,26 @@ class WebCrawler
     }
 
     /**
+     * get cached meta data
+     * @param string $fileid_
+     * @param array
+     */
+    public function getCachedMetaData(string $fileid_): array
+    {
+        $_file = $this->_storage . $fileid_ . '/meta.json';
+
+        
+        if (!file_exists($_file))
+            return [];
+           // throw new CrawlerException(__FUNCTION__ . ': meta file not exist.');
+       
+
+        $_file_content =  file_get_contents($_file);
+        $_file_content_json = json_decode($_file_content, true);
+        return $_file_content_json;
+    }
+
+    /**
      * output specific from local cache
      * @param string $fileid_
      * @param string $version_
@@ -192,6 +212,31 @@ class WebCrawler
         file_put_contents($this->_storage . $fileid_ . '/thumb.jpg', $data_);
 
         if ($this->resizeImage($this->_storage . $fileid_ . '/use.jpg', 1600, 1200) && $this->resizeImage($this->_storage . $fileid_ . '/thumb.jpg', 320, 240))
+            return true;
+        return false;
+    }
+
+    /**
+     * store meta data
+     * @param string $fileid_
+     * @param array $data_
+     * @return bool
+     */
+    public function storeMeta(string $fileid_, array $data_): bool
+    {
+        if ($this->isBlacklisted($fileid_))
+            throw new CrawlerException('Blacklisted: ' . $fileid_);
+
+        if (!file_exists($this->_storage . $fileid_))
+            throw new CrawlerException('Not exists: ' . $fileid_);
+
+        if (!file_exists($this->_storage . $fileid_))
+            if (!mkdir($this->_storage . $fileid_, 0777, true))
+                throw new CrawlerException('Fatal: Cache Directory');
+
+        $_data_json = json_encode($data_);
+
+        if (file_put_contents($this->_storage . $fileid_ . '/meta.json', $_data_json))
             return true;
         return false;
     }

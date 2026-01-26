@@ -37,7 +37,6 @@ final class _Wallpapers extends Provider
     /**
      * query the detail page
      * @param string $url_
-     * @param string $prefix_
      * @return array
      */
     protected function details(string $url_): array
@@ -47,6 +46,25 @@ final class _Wallpapers extends Provider
         foreach ($_xpath->query('//img[@class="post-image priority promote"]') as $node_) {
             $_result[] = $this->url('base') . $node_->{'getAttribute'}('src');
         }
+        return $_result;
+    }
+
+    /**
+     * query meta details
+     * @param string $url_
+     * @return array
+     */
+    protected function detailsMeta(string $url_): array
+    {
+        $_result = [];
+        $_xpath = $this->parse($url_);
+        foreach ($_xpath->query('//h1') as $node_) {
+            $_result['title'] = trim($node_->{'textContent'});
+        }
+        foreach ($_xpath->query('//h1/following-sibling::p') as $node_) {
+            $_result['description'] = trim($node_->{'textContent'});
+        }
+        $_result['source'] = $url_;
         return $_result;
     }
 }

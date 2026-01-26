@@ -49,9 +49,28 @@ final class _DeviantArt extends Provider
 
         // TODO:: better xpath
         //foreach ($_xpath->query('//img[@class="lGws3n imYPxe"]') as $node_) {
-        foreach ($_xpath->query('/html/body/main/div/div[1]/div[1]/div/div[2]/img') as $node_) {
+        foreach ($_xpath->query('//div[@typeof="ImageObject"]/img') as $node_) {
             $_result[] = $node_->{'getAttribute'}('src');
         }
+        return $_result;
+    }
+
+    /**
+     * query meta details
+     * @param string $url_
+     * @return array
+     */
+    protected function detailsMeta(string $url_): array
+    {
+        $_result = [];
+        $_xpath = $this->parse($url_);
+        foreach ($_xpath->query('//h1') as $node_) {
+            $_result['title'] = trim($node_->{'textContent'});
+        }
+        foreach ($_xpath->query('//div[@id="description"]/div/div/p[position()=1]') as $node_) {
+            $_result['description'] = trim($node_->{'textContent'});
+        }
+        $_result['source'] = $url_;
         return $_result;
     }
 }
