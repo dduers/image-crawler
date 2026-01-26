@@ -18,24 +18,12 @@ final class _4KWallpapers extends Provider
     ];
 
     /**
-     * parse url to DOMXPath
-     * @param string $url_
-     * @return DOMXPath
-     */
-    private function parse(string $url_): DOMXPath
-    {
-        $_dom = new DOMDocument();
-        $_dom->loadHTMLFile($url_, LIBXML_NOERROR);
-        return new DOMXPath($_dom);
-    }
-
-    /**
      * query the results page
      * @param string $url_
-     * @param string $prefix_
+     * @param int $pages_
      * @return array
      */
-    protected function results(string $url_): array
+    protected function results(string $url_, int $pages_ = 1): array
     {
         $_result = [];
         $_xpath = $this->parse($url_);
