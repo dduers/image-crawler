@@ -1,17 +1,18 @@
 <?php
-
+ 
 declare(strict_types=1);
 
 namespace Dduers\ImageCrawler;
 
 use Dduers\ImageCrawler\Exception\CrawlerException;
 use Dduers\ImageCrawler\Provider\Provider;
+use Exception;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 /**
  * wallpaper crawler
- * @author Daniel Duersteler <daniel.duersteler@xsite.ch
+ * @author Daniel Duersteler <daniel.duersteler@gmail.com>
  */
 class WebCrawler
 {
@@ -51,7 +52,7 @@ class WebCrawler
     {
         $_filename = $this->_storage . $fileid_ . '/' . $version_ . '.jpg';
         if (!file_exists($_filename))
-            throw new CrawlerException(__FUNCTION__ . ': file not exist.');
+            throw new Exception(__FUNCTION__ . ': file not exist.');
         header('Content-Type: ' . mime_content_type($_filename));
         echo file_get_contents($_filename);
         exit();
@@ -66,11 +67,8 @@ class WebCrawler
     {
         $_file = $this->_storage . $fileid_ . '/meta.json';
 
-        
         if (!file_exists($_file))
             return [];
-           // throw new CrawlerException(__FUNCTION__ . ': meta file not exist.');
-       
 
         $_file_content =  file_get_contents($_file);
         $_file_content_json = json_decode($_file_content, true);
@@ -87,7 +85,7 @@ class WebCrawler
     {
         $_filename = $this->_storage . '../_crawler/' . $fileid_ . '.jpg';
         if (!file_exists($_filename))
-            throw new CrawlerException(__FUNCTION__ . ': file not exist.');
+            throw new Exception(__FUNCTION__ . ': file not exist.');
         header('Content-Type: ' . mime_content_type($_filename));
         header('Content-Length: ' . filesize($_filename));
         echo file_get_contents($_filename);
@@ -140,7 +138,10 @@ class WebCrawler
         return $_data;
     }
 
-    public function provider()
+    /**
+     * @return Provider
+     */
+    public function provider(): Provider
     {
         return $this->_provider;
     }
@@ -198,14 +199,14 @@ class WebCrawler
     private function addCached(string $fileid_, string $data_): bool
     {
         if ($this->isBlacklisted($fileid_))
-            throw new CrawlerException('Blacklisted: ' . $fileid_);
+            throw new Exception('Blacklisted: ' . $fileid_);
 
         if (file_exists($this->_storage . $fileid_))
-            throw new CrawlerException('Exists: ' . $fileid_);
+            throw new Exception('Exists: ' . $fileid_);
 
         if (!file_exists($this->_storage . $fileid_))
             if (!mkdir($this->_storage . $fileid_, 0777, true))
-                throw new CrawlerException('Fatal: Cache Directory');
+                throw new Exception('Fatal: Cache Directory');
 
         file_put_contents($this->_storage . $fileid_ . '/source.jpg', $data_);
         file_put_contents($this->_storage . $fileid_ . '/use.jpg', $data_);
@@ -217,22 +218,22 @@ class WebCrawler
     }
 
     /**
-     * store meta data
-     * @param string $fileid_
+     * sore meta data to jason file
+     * @param string $field_
      * @param array $data_
-     * @return bool
+     * @param bool
      */
     public function storeMeta(string $fileid_, array $data_): bool
     {
         if ($this->isBlacklisted($fileid_))
-            throw new CrawlerException('Blacklisted: ' . $fileid_);
+            throw new Exception('Blacklisted: ' . $fileid_);
 
         if (!file_exists($this->_storage . $fileid_))
-            throw new CrawlerException('Not exists: ' . $fileid_);
+            throw new Exception('Not exists: ' . $fileid_);
 
         if (!file_exists($this->_storage . $fileid_))
             if (!mkdir($this->_storage . $fileid_, 0777, true))
-                throw new CrawlerException('Fatal: Cache Directory');
+                throw new Exception('Fatal: Cache Directory');
 
         $_data_json = json_encode($data_);
 

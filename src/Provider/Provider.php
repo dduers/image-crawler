@@ -57,7 +57,6 @@ class Provider
         if ($_html === false)
             throw new Exception('Cannot resolve URL: ' . $url_);
         $_dom = new DOMDocument();
-        //$_dom->loadHTMLFile($url_, LIBXML_NOERROR);
         $_html_loaded = $_dom->loadHTML($_html, LIBXML_NOERROR);
         if ($_html_loaded === false)
             throw new Exception('Could not parse HTML content: ' . $url_);
